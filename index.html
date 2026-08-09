@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>רשימת אריזה</title>
+<style>
+  :root {
+    --bg: #f2f6f9;
+    --card: #ffffff;
+    --ink: #1c2b36;
+    --muted: #6b7d8a;
+    --accent: #0e7c86;
+    --accent-soft: #e0f2f3;
+    --accent-ink: #0a5a61;
+    --danger: #c0392b;
+    --border: #dde6ec;
+    --done: #9fb2bd;
+    --shadow: 0 1px 3px rgba(20, 40, 60, .08), 0 4px 14px rgba(20, 40, 60, .06);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Segoe UI", "Heebo", Arial, "Noto Sans Hebrew", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  input { font-family: inherit; }
+
+  .app { max-width: 640px; margin: 0 auto; padding: 0 14px 90px; }
+
+  /* ---------- Header ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--bg);
+    padding: 12px 0 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .topbar h1 {
+    font-size: 1.25rem; font-weight: 700; flex: 1;
+    display: flex; align-items: center; gap: 8px; min-width: 0;
+  }
+  .topbar h1 .emoji { font-size: 1.4rem; }
+  .icon-btn {
+    border: 1px solid var(--border); background: var(--card);
+    border-radius: 10px; padding: 8px 12px; font-size: .9rem;
+    color: var(--ink); box-shadow: var(--shadow); white-space: nowrap;
+  }
+  .icon-btn:active { transform: scale(.97); }
+  .icon-btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .title-input {
+    flex: 1; min-width: 0; border: none; background: transparent;
+    font-size: 1.2rem; font-weight: 700; color: var(--ink);
+    border-bottom: 2px dashed transparent; padding: 2px 0;
+  }
+  .title-input:focus { outline: none; border-bottom-color: var(--accent); }
+
+  /* ---------- Trip cards (home) ---------- */
+  .trip-card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .trip-card:hover { border-color: var(--accent); }
+  .trip-card .trip-name { font-size: 1.05rem; font-weight: 700; }
+  .trip-card .trip-meta { color: var(--muted); font-size: .82rem; margin-top: 4px; }
+  .trip-card .trip-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .mini-btn {
+    border: 1px solid var(--border); background: #fff; color: var(--muted);
+    border-radius: 8px; padding: 5px 10px; font-size: .78rem;
+  }
+  .mini-btn:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .mini-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+  .progress-track {
+    height: 6px; background: var(--border); border-radius: 3px; margin-top: 12px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s; }
+
+  .empty-state {
+    text-align: center; color: var(--muted); padding: 60px 20px;
+  }
+  .empty-state .emoji { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+  .big-btn {
+    width: 100%; padding: 14px; border-radius: var(--radius);
+    background: var(--accent); color: #fff; border: none;
+    font-size: 1rem; font-weight: 600; box-shadow: var(--shadow);
+    margin-bottom: 12px;
+  }
+  .big-btn:active { transform: scale(.98); }
+  .row-btns { display: flex; gap: 10px; margin-bottom: 16px; }
+  .row-btns .ghost-btn { flex: 1; }
+  .ghost-btn {
+    padding: 11px; border-radius: var(--radius); background: var(--card);
+    color: var(--accent-ink); border: 1px solid var(--border);
+    font-size: .9rem; font-weight: 600; box-shadow: var(--shadow);
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    display: flex; background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden;
+  }
+  .tabs button {
+    flex: 1; padding: 12px; border: none; background: transparent;
+    font-size: .95rem; font-weight: 600; color: var(--muted);
+  }
+  .tabs button.active { background: var(--accent); color: #fff; }
+
+  /* ---------- Section nav chips ---------- */
+  .nav-chips {
+    position: sticky; top: 54px; z-index: 15;
+    display: flex; gap: 6px; overflow-x: auto;
+    padding: 6px 2px 8px; margin-bottom: 8px;
+    background: var(--bg);
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    touch-action: pan-x pan-y; cursor: grab;
+  }
+  .nav-chips::-webkit-scrollbar { height: 4px; }
+  .nav-chips::-webkit-scrollbar-track { background: transparent; }
+  .nav-chips::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .nav-chip {
+    border: 1px solid var(--border); background: var(--card);
+    border-radius: 999px; padding: 6px 12px; font-size: .8rem;
+    white-space: nowrap; color: var(--ink);
+    display: flex; gap: 5px; align-items: center; flex-shrink: 0;
+  }
+  .nav-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+  /* ---------- Pack progress ---------- */
+  .pack-summary {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .pack-summary .nums { display: flex; justify-content: space-between; align-items: baseline; }
+  .pack-summary .count { font-weight: 700; font-size: 1.1rem; color: var(--accent-ink); }
+  .pack-summary .pct { color: var(--muted); font-size: .85rem; }
+
+  /* ---------- Sections ---------- */
+  .section {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden;
+  }
+  .section-head {
+    display: flex; align-items: center; gap: 10px; padding: 13px 16px;
+    cursor: pointer; user-select: none;
+  }
+  .section-head .sec-emoji { font-size: 1.2rem; }
+  .section-head .sec-name { font-weight: 700; flex: 1; font-size: .98rem; }
+  .badge {
+    background: var(--accent-soft); color: var(--accent-ink);
+    border-radius: 999px; padding: 2px 10px; font-size: .75rem; font-weight: 700;
+  }
+  .badge.zero { background: #eef2f5; color: var(--muted); font-weight: 400; }
+  .chev { color: var(--muted); font-size: .8rem; transition: transform .2s; }
+  .section.collapsed .chev { transform: rotate(90deg); }
+  .section.collapsed .section-body { display: none; }
+
+  .section-body { border-top: 1px solid var(--border); }
+
+  /* ---------- Item rows ---------- */
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; border-bottom: 1px solid #f0f4f7;
+    cursor: pointer; user-select: none;
+  }
+  .item:last-child { border-bottom: none; }
+  .item .check {
+    width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+    border: 2px solid var(--border); display: flex; align-items: center;
+    justify-content: center; font-size: .8rem; color: #fff; background: #fff;
+    transition: background .15s, border-color .15s;
+  }
+  .item.selected .check { background: var(--accent); border-color: var(--accent); }
+  .item .item-name { flex: 1; font-size: .93rem; min-width: 0; }
+  .item.packed .item-name { text-decoration: line-through; color: var(--done); }
+  .item.packed .check { background: var(--done); border-color: var(--done); }
+
+  .qty {
+    display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+  }
+  .qty button {
+    width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border);
+    background: #fff; color: var(--accent-ink); font-size: 1rem; line-height: 1;
+  }
+  .qty .qty-num { min-width: 24px; text-align: center; font-size: .85rem; font-weight: 700; }
+  .qty-tag { color: var(--muted); font-size: .8rem; flex-shrink: 0; }
+
+  .del-custom {
+    border: none; background: none; color: var(--muted); font-size: 1rem;
+    padding: 2px 6px; flex-shrink: 0;
+  }
+  .del-custom:hover { color: var(--danger); }
+  .custom-tag { font-size: .68rem; background: #fdf1d6; color: #8a6d1a; border-radius: 6px; padding: 1px 6px; }
+
+  /* ---------- Add item ---------- */
+  .add-row { padding: 8px 16px 12px; }
+  .add-toggle {
+    border: none; background: none; color: var(--accent-ink);
+    font-size: .85rem; font-weight: 600; padding: 4px 0;
+  }
+  .add-form { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .add-form input {
+    flex: 1 1 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: .9rem; min-width: 0;
+  }
+  .add-form input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .add-form button {
+    flex: 1; padding: 9px 12px; border-radius: 10px; border: none;
+    background: var(--accent); color: #fff; font-weight: 600; font-size: .85rem;
+    white-space: nowrap;
+  }
+  .add-form button.master-btn {
+    background: var(--accent-soft); color: var(--accent-ink);
+    border: 1px solid var(--accent);
+  }
+
+  .hint { color: var(--muted); font-size: .82rem; text-align: center; padding: 20px 10px; }
+
+  .toolbar-under { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 10px;
+    font-size: .85rem; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 50;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (min-width: 700px) {
+    .topbar h1 { font-size: 1.4rem; }
+  }
+
+  /* ---------- Print (packing list on paper) ---------- */
+  @media print {
+    body { background: #fff; }
+    .app { max-width: none; padding: 0; columns: 2; column-gap: 10mm; }
+    .topbar { position: static; column-span: all; padding: 0 0 6px; }
+    .topbar .icon-btn, .tabs, .nav-chips, .toolbar-under, .pack-summary,
+    .add-row, .del-custom, .toast { display: none !important; }
+    .title-input { font-size: 1.3rem; border-bottom: none; }
+    .section {
+      box-shadow: none; border: 1px solid #bbb; border-radius: 6px;
+      margin-bottom: 6px;
+    }
+    .section-head { padding: 6px 10px; }
+    .chev, .badge { display: none; }
+    .item { padding: 4px 10px; break-inside: avoid; cursor: default; }
+    .item .check { width: 16px; height: 16px; border-radius: 4px; }
+    .qty button { display: none; }
+    /* on the packing tab, print empty checkboxes to tick off by hand */
+    #app[data-tab="pack"] .item .check {
+      background: #fff !important; border: 1.5px solid #444 !important;
+      color: transparent !important;
+    }
+    #app[data-tab="pack"] .item.packed .item-name {
+      text-decoration: none; color: var(--ink);
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept=".json,application/json" style="display:none">
+
+<script>
+"use strict";
+
+/* ============================================================
+   Catalog: built-in master list. Each item has stable id + he/en.
+   ============================================================ */
+const CATALOG = [
+  { id: "docs", he: "מסמכים וכסף", en: "Documents & Money", emoji: "🛂", items: [
+    { id: "docs-passport", he: "דרכונים", en: "Passports" },
+    { id: "docs-license", he: "רישיון נהיגה", en: "Driver's license" },
+    { id: "docs-cards", he: "כרטיסי אשראי", en: "Credit cards" },
+    { id: "docs-cash", he: "מזומן / מטבע מקומי", en: "Cash / local currency" },
+    { id: "docs-wallet", he: "ארנק", en: "Wallet" },
+    { id: "docs-keys", he: "מפתחות בית ורכב", en: "House & car keys" },
+  ]},
+  { id: "clothes", he: "ביגוד מבוגרים", en: "Adult Clothing", emoji: "👕", items: [
+    { id: "cl-shirts-short", he: "חולצות קצרות", en: "Short-sleeve shirts" },
+    { id: "cl-shirts-long", he: "חולצות ארוכות", en: "Long-sleeve shirts" },
+    { id: "cl-pants", he: "מכנסיים ארוכים", en: "Long pants" },
+    { id: "cl-shorts", he: "מכנסיים קצרים", en: "Shorts" },
+    { id: "cl-underwear", he: "תחתונים", en: "Underwear" },
+    { id: "cl-socks", he: "גרביים", en: "Socks" },
+    { id: "cl-pajamas", he: "פיג'מות", en: "Pajamas" },
+    { id: "cl-sweater", he: "סווטשירט / סוודר", en: "Sweatshirt / sweater" },
+    { id: "cl-jacket", he: "מעיל", en: "Jacket / coat" },
+    { id: "cl-dress", he: "שמלות", en: "Dresses" },
+    { id: "cl-belt", he: "חגורה", en: "Belt" },
+    { id: "cl-hat", he: "כובע", en: "Hat" },
+    { id: "cl-shoes", he: "נעליים נוחות", en: "Comfortable shoes" },
+    { id: "cl-sandals", he: "סנדלים", en: "Sandals" },
+    { id: "cl-flipflops", he: "כפכפים", en: "Flip-flops" },
+    { id: "cl-sport", he: "בגדי ספורט", en: "Sportswear" },
+    { id: "cl-evening", he: "בגד ערב / אלגנט", en: "Evening outfit" },
+  ]},
+  { id: "kids", he: "ביגוד ילדים", en: "Kids' Clothing", emoji: "🧒", items: [
+    { id: "kd-shirts-short", he: "חולצות קצרות לילדים", en: "Kids' short-sleeve shirts" },
+    { id: "kd-shirts-long", he: "חולצות ארוכות לילדים", en: "Kids' long-sleeve shirts" },
+    { id: "kd-pants", he: "מכנסיים ארוכים לילדים", en: "Kids' long pants" },
+    { id: "kd-shorts", he: "מכנסיים קצרים לילדים", en: "Kids' shorts" },
+    { id: "kd-underwear", he: "תחתונים לילדים", en: "Kids' underwear" },
+    { id: "kd-socks", he: "גרביים לילדים", en: "Kids' socks" },
+    { id: "kd-pajamas", he: "פיג'מות לילדים", en: "Kids' pajamas" },
+    { id: "kd-sweater", he: "סווטשירטים לילדים", en: "Kids' sweatshirts" },
+    { id: "kd-jacket", he: "מעיל לילדים", en: "Kids' jacket" },
+    { id: "kd-hat", he: "כובעים לילדים", en: "Kids' hats" },
+    { id: "kd-shoes", he: "נעליים לילדים", en: "Kids' shoes" },
+    { id: "kd-sandals", he: "סנדלים לילדים", en: "Kids' sandals" },
+    { id: "kd-flipflops", he: "כפכפים לילדים", en: "Kids' flip-flops" },
+    { id: "kd-swim", he: "בגדי ים לילדים", en: "Kids' swimwear" },
+  ]},
+  { id: "toiletries", he: "טואלטיקה", en: "Toiletries", emoji: "🪥", items: [
+    { id: "tl-toothbrush", he: "מברשות שיניים", en: "Toothbrushes" },
+    { id: "tl-toothpaste", he: "משחת שיניים", en: "Toothpaste" },
+    { id: "tl-deodorant", he: "דאודורנט", en: "Deodorant" },
+    { id: "tl-shampoo", he: "שמפו", en: "Shampoo" },
+    { id: "tl-conditioner", he: "מרכך", en: "Conditioner" },
+    { id: "tl-soap", he: "סבון / ג'ל רחצה", en: "Soap / shower gel" },
+    { id: "tl-razor", he: "סכין גילוח", en: "Razor" },
+    { id: "tl-hairbrush", he: "מברשת שיער", en: "Hairbrush" },
+    { id: "tl-sunscreen", he: "קרם הגנה", en: "Sunscreen" },
+    { id: "tl-moisturizer", he: "קרם לחות", en: "Moisturizer" },
+    { id: "tl-makeup", he: "איפור", en: "Makeup" },
+    { id: "tl-hairties", he: "גומיות וסיכות שיער", en: "Hair ties & clips" },
+    { id: "tl-nailclip", he: "גוזז ציפורניים", en: "Nail clippers" },
+    { id: "tl-wipes", he: "מגבונים לחים", en: "Wet wipes" },
+    { id: "tl-tissues", he: "טישו", en: "Tissues" },
+    { id: "tl-qtips", he: "מקלוני אוזניים", en: "Cotton swabs" },
+    { id: "tl-glasses", he: "משקפיים", en: "Glasses" },
+    { id: "tl-feminine", he: "מוצרי היגיינה נשית", en: "Feminine hygiene products" },
+    { id: "tl-perfume", he: "בושם", en: "Perfume" },
+  ]},
+  { id: "meds", he: "תרופות ועזרה ראשונה", en: "Medicine & First Aid", emoji: "💊", items: [
+    { id: "md-personal", he: "תרופות אישיות / מרשם", en: "Personal / prescription meds" },
+    { id: "md-painkillers", he: "משככי כאבים", en: "Pain relievers" },
+    { id: "md-kidsfever", he: "אקמול / נורופן לילדים", en: "Kids' fever reducer" },
+    { id: "md-thermometer", he: "מדחום", en: "Thermometer" },
+    { id: "md-bandaids", he: "פלסטרים", en: "Band-aids" },
+    { id: "md-antiseptic", he: "חומר חיטוי", en: "Antiseptic" },
+    { id: "md-motionsick", he: "כדורים נגד בחילה", en: "Motion sickness pills" },
+    { id: "md-allergy", he: "תרופות לאלרגיה", en: "Allergy medicine" },
+    { id: "md-mosquito", he: "דוחה יתושים", en: "Mosquito repellent" },
+    { id: "md-afterbite", he: "משחה לאחר עקיצות", en: "After-bite cream" },
+    { id: "md-vitamins", he: "ויטמינים", en: "Vitamins" },
+  ]},
+  { id: "electronics", he: "אלקטרוניקה", en: "Electronics", emoji: "🔌", items: [
+    { id: "el-chargers", he: "מטענים לטלפונים", en: "Phone chargers" },
+    { id: "el-powerbank", he: "מטען נייד (פאוור בנק)", en: "Power bank" },
+    { id: "el-adapter", he: "מתאם חשמל לחו\"ל", en: "Travel power adapter" },
+    { id: "el-headphones", he: "אוזניות", en: "Headphones" },
+    { id: "el-camera", he: "מצלמה", en: "Camera" },
+    { id: "el-tablet", he: "טאבלט לילדים", en: "Kids' tablet" },
+    { id: "el-laptop", he: "מחשב נייד", en: "Laptop" },
+    { id: "el-cables", he: "כבלי טעינה", en: "Charging cables" },
+  ]},
+  { id: "beach", he: "ים ובריכה", en: "Beach & Pool", emoji: "🏖️", items: [
+    { id: "bc-swimsuits", he: "בגדי ים", en: "Swimsuits" },
+    { id: "bc-towels", he: "מגבות חוף", en: "Beach towels" },
+    { id: "bc-goggles", he: "משקפות שחייה", en: "Swim goggles" },
+    { id: "bc-floaties", he: "מצופים", en: "Floaties" },
+    { id: "bc-toys", he: "צעצועי חוף", en: "Beach toys" },
+    { id: "bc-bag", he: "תיק חוף", en: "Beach bag" },
+    { id: "bc-watershoes", he: "נעלי ים", en: "Water shoes" },
+    { id: "bc-mat", he: "מחצלת", en: "Beach mat" },
+    { id: "bc-watertoys", he: "משחקי מים", en: "Water toys" },
+    { id: "bc-frisbee", he: "פריסבי", en: "Frisbee" },
+  ]},
+  { id: "gear", he: "ציוד ושונות", en: "Gear & Misc", emoji: "🎒", items: [
+    { id: "gr-suitcases", he: "מזוודות", en: "Suitcases" },
+    { id: "gr-trolley", he: "טרולי", en: "Carry-on trolley" },
+    { id: "gr-backpack", he: "תיק גב", en: "Backpack" },
+    { id: "gr-neckpillow", he: "כרית צוואר", en: "Neck pillow" },
+    { id: "gr-eyemask", he: "מסכת עיניים", en: "Eye mask" },
+    { id: "gr-earplugs", he: "אטמי אוזניים", en: "Earplugs" },
+    { id: "gr-umbrella", he: "מטרייה", en: "Umbrella" },
+    { id: "gr-laundrybag", he: "שקית לכביסה מלוכלכת", en: "Laundry bag" },
+    { id: "gr-ziplock", he: "שקיות זיפלוק", en: "Ziplock bags" },
+    { id: "gr-books", he: "ספרים / מגזינים", en: "Books / magazines" },
+    { id: "gr-games", he: "משחקים לדרך", en: "Travel games" },
+    { id: "gr-sunglasses", he: "משקפי שמש", en: "Sunglasses" },
+    { id: "gr-locks", he: "מנעולים למזוודות", en: "Luggage locks" },
+    { id: "gr-bags", he: "תיקים רב־פעמיים", en: "Reusable bags" },
+    { id: "gr-smallbags", he: "שקיות קטנות", en: "Small bags" },
+    { id: "gr-towels", he: "מגבות", en: "Towels" },
+    { id: "gr-kidstableware", he: "כלי אוכל לילדים", en: "Kids' tableware" },
+    { id: "gr-toycars", he: "מכוניות צעצוע", en: "Toy cars" },
+    { id: "gr-balls", he: "כדורים", en: "Balls" },
+    { id: "gr-balloons", he: "בלונים", en: "Balloons" },
+  ]},
+  { id: "baby", he: "תינוקות", en: "Babies", emoji: "🍼", items: [
+    { id: "bb-diapers", he: "חיתולים", en: "Diapers" },
+    { id: "bb-swimdiapers", he: "חיתולים לבריכה", en: "Swim diapers" },
+    { id: "bb-wipes", he: "מגבונים לתינוק", en: "Baby wipes" },
+    { id: "bb-bottles", he: "בקבוקים", en: "Bottles" },
+    { id: "bb-pacifiers", he: "מוצצים", en: "Pacifiers" },
+    { id: "bb-stroller", he: "עגלה", en: "Stroller" },
+  ]},
+  { id: "food", he: "אוכל ומצרכים", en: "Food & Groceries", emoji: "🛒", items: [
+    { id: "fd-snacks", he: "חטיפים", en: "Snacks" },
+    { id: "fd-water", he: "בקבוקי מים", en: "Water bottles" },
+    { id: "fd-kidswater", he: "בקבוק מים לילדים", en: "Kids' water bottle" },
+    { id: "bc-cooler", he: "צידנית", en: "Cooler" },
+    { id: "fd-fruit", he: "פירות", en: "Fruit" },
+    { id: "fd-sandwiches", he: "כריכים לדרך", en: "Sandwiches for the road" },
+    { id: "fd-gum", he: "מסטיקים", en: "Chewing gum" },
+    { id: "fd-coffee", he: "קפה", en: "Coffee" },
+    { id: "fd-tea", he: "תה", en: "Tea" },
+    { id: "fd-sweetener", he: "סוכרזית", en: "Sweetener" },
+    { id: "gc-bread", he: "לחם", en: "Bread" },
+    { id: "gc-rolls", he: "לחמניות", en: "Bread rolls" },
+    { id: "gc-eggs", he: "ביצים", en: "Eggs" },
+    { id: "gc-milk", he: "חלב", en: "Milk" },
+    { id: "gc-butter", he: "חמאה", en: "Butter" },
+    { id: "gc-cream", he: "שמנת", en: "Cream" },
+    { id: "gc-cheeses", he: "גבינות", en: "Cheeses" },
+    { id: "gc-yellowcheese", he: "גבינה צהובה", en: "Yellow cheese" },
+    { id: "gc-cornflakes", he: "קורנפלקס", en: "Cornflakes" },
+    { id: "gc-ptitim", he: "פתיתים", en: "Ptitim (Israeli couscous)" },
+    { id: "gc-schnitzels", he: "שניצלים", en: "Schnitzels" },
+    { id: "gc-corn", he: "תירס", en: "Corn" },
+    { id: "gc-bolognese", he: "רוטב בולונז", en: "Bolognese sauce" },
+    { id: "gc-caesar", he: "רוטב לקיסר", en: "Caesar dressing" },
+    { id: "gc-zaatar", he: "זעתר", en: "Za'atar" },
+    { id: "gc-chocospread", he: "ממרח שוקולד", en: "Chocolate spread" },
+    { id: "gc-datespread", he: "ממרח תמרים", en: "Date spread" },
+    { id: "gc-petitbeurre", he: "פתי בר", en: "Petit Beurre biscuits" },
+    { id: "gc-cakes", he: "עוגות", en: "Cakes" },
+    { id: "gc-ricecakes", he: "פריכיות", en: "Rice cakes" },
+    { id: "gc-pretzels", he: "מקלות מלוחים", en: "Pretzel sticks" },
+    { id: "gc-dietcola", he: "דיאט קולה", en: "Diet cola" },
+    { id: "gc-bananas", he: "בננות", en: "Bananas" },
+    { id: "gc-grapes", he: "ענבים", en: "Grapes" },
+    { id: "gc-apples", he: "תפוחים", en: "Apples" },
+    { id: "gc-tomatoes", he: "עגבניות", en: "Tomatoes" },
+    { id: "gc-cucumbers", he: "מלפפונים", en: "Cucumbers" },
+    { id: "gc-peppers", he: "פלפלים", en: "Peppers" },
+    { id: "gc-zucchini", he: "צוקיני", en: "Zucchini" },
+    { id: "gc-cauliflower", he: "כרובית", en: "Cauliflower" },
+    { id: "gc-vegetables", he: "ירקות", en: "Vegetables" },
+    { id: "gc-dispbowls", he: "קערות חד־פעמיות", en: "Disposable bowls" },
+    { id: "gc-dispcutlery", he: "סכו\"ם חד־פעמי", en: "Disposable cutlery" },
+  ]},
+];
+
+/* ============================================================
+   UI strings
+   ============================================================ */
+const STR = {
+  he: {
+    appTitle: "רשימת אריזה",
+    newTrip: "✈️ טיול חדש",
+    importBtn: "📥 ייבוא קובץ",
+    exportAll: "📤 ייצוא הכל",
+    noTrips: "עוד אין טיולים.\nלחצו על \"טיול חדש\" כדי להתחיל!",
+    tripDefaultName: "טיול חדש",
+    created: "נוצר",
+    itemsSelected: "פריטים נבחרו",
+    packedOf: "נארזו",
+    open: "פתיחה",
+    duplicate: "שכפול",
+    exportTrip: "ייצוא",
+    share: "🔗 שיתוף",
+    linkCopied: "הקישור הועתק — שלחו אותו למי שתרצו",
+    shareTooBig: "הרשימה גדולה מדי לקישור — השתמשו בייצוא קובץ",
+    shareNeedsWeb: "שיתוף בקישור יעבוד כשהאפליקציה תעלה לאתר אינטרנט. בינתיים — השתמשו בכפתור \"ייצוא\" ושלחו את הקובץ.",
+    del: "מחיקה",
+    confirmDelete: "למחוק את הטיול הזה? אי אפשר לבטל.",
+    back: "→ הטיולים שלי",
+    tabBuild: "בחירת פריטים",
+    tabPack: "אריזה",
+    addItem: "+ הוספת פריט",
+    addPlaceholder: "שם הפריט...",
+    addToTrip: "רק לטיול הזה",
+    addToMaster: "לרשימה הכללית",
+    custom: "אישי",
+    tripOnlyTag: "לטיול זה",
+    deleteTripItemConfirm: "למחוק את הפריט הזה מהטיול?",
+    packEmpty: "עוד לא נבחרו פריטים.\nעברו ללשונית \"בחירת פריטים\" כדי לבנות את הרשימה.",
+    restoreRemoved: "שחזור פריטים שהוסרו",
+    resetPacking: "איפוס סימוני אריזה",
+    print: "🖨️ הדפסה",
+    confirmReset: "לאפס את כל סימוני האריזה?",
+    hidePacked: "הסתרת פריטים שנארזו",
+    showPacked: "הצגת פריטים שנארזו",
+    allPacked: "🎉 הכל ארוז! נסיעה טובה!",
+    copySuffix: "(עותק)",
+    imported: "הייבוא הושלם",
+    importError: "קובץ לא תקין",
+    exported: "הקובץ הורד",
+    langBtn: "EN",
+    collapseAll: "כיווץ הכל",
+    expandAll: "הרחבת הכל",
+    deleteItemConfirm: "להסיר את הפריט מהקטלוג הראשי? הוא יוסר מכל הטיולים.",
+    packedLabel: "נארזו",
+  },
+  en: {
+    appTitle: "Packing List",
+    newTrip: "✈️ New Trip",
+    importBtn: "📥 Import file",
+    exportAll: "📤 Export all",
+    noTrips: "No trips yet.\nTap \"New Trip\" to get started!",
+    tripDefaultName: "New Trip",
+    created: "Created",
+    itemsSelected: "items selected",
+    packedOf: "packed",
+    open: "Open",
+    duplicate: "Duplicate",
+    exportTrip: "Export",
+    share: "🔗 Share",
+    linkCopied: "Link copied — send it to anyone",
+    shareTooBig: "List too large for a link — use file export",
+    shareNeedsWeb: "Share links will work once the app is hosted online. For now, use \"Export\" and send the file.",
+    del: "Delete",
+    confirmDelete: "Delete this trip? This cannot be undone.",
+    back: "← My Trips",
+    tabBuild: "Choose Items",
+    tabPack: "Packing",
+    addItem: "+ Add item",
+    addPlaceholder: "Item name...",
+    addToTrip: "This trip only",
+    addToMaster: "General catalog",
+    custom: "custom",
+    tripOnlyTag: "this trip",
+    deleteTripItemConfirm: "Delete this item from this trip?",
+    packEmpty: "No items selected yet.\nGo to the \"Choose Items\" tab to build your list.",
+    restoreRemoved: "Restore removed items",
+    resetPacking: "Reset packing checkmarks",
+    print: "🖨️ Print",
+    confirmReset: "Reset all packing checkmarks?",
+    hidePacked: "Hide packed items",
+    showPacked: "Show packed items",
+    allPacked: "🎉 All packed! Have a great trip!",
+    copySuffix: "(copy)",
+    imported: "Import complete",
+    importError: "Invalid file",
+    exported: "File downloaded",
+    langBtn: "עב",
+    collapseAll: "Collapse all",
+    expandAll: "Expand all",
+    deleteItemConfirm: "Remove this item from the master catalog? It will be removed from all trips.",
+    packedLabel: "packed",
+  },
+};
+
+/* ============================================================
+   State
+   ============================================================ */
+const LS_KEY = "packingListData";
+
+let data = loadData();
+let view = { screen: "home", tripId: null, tab: "build", hidePacked: false, collapsed: {}, addOpen: {} };
+
+function loadData() {
+  let d = null;
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.trips)) d = parsed;
+    }
+  } catch (e) { /* corrupted storage — start fresh */ }
+  if (!d) d = { lang: "he", trips: [] };
+  const isUpgrade = !Array.isArray(d.customCatalog);
+  if (isUpgrade) d.customCatalog = [];
+  if (!d.removed || typeof d.removed !== "object") d.removed = {};
+  for (const trip of d.trips) {
+    if (isUpgrade && Array.isArray(trip.customItems)) {
+      // first upgrade from the per-trip-only era: move customs to the master catalog
+      for (const ci of trip.customItems) {
+        if (ci && ci.id && !d.customCatalog.some(c => c.id === ci.id)) d.customCatalog.push(ci);
+      }
+      trip.customItems = [];
+    }
+    if (!Array.isArray(trip.customItems)) trip.customItems = [];
+  }
+  // the "groceries" section was merged into "food" — move custom items along
+  for (const ci of d.customCatalog) if (ci && ci.section === "groceries") ci.section = "food";
+  for (const trip of d.trips) for (const ci of trip.customItems) if (ci && ci.section === "groceries") ci.section = "food";
+  // drop references to items that no longer exist in the app's catalog
+  const builtinIds = new Set(CATALOG.flatMap(s => s.items.map(i => i.id)));
+  for (const trip of d.trips) {
+    const valid = id => builtinIds.has(id)
+      || d.customCatalog.some(c => c.id === id)
+      || trip.customItems.some(c => c.id === id);
+    for (const id of Object.keys(trip.selected)) {
+      if (!valid(id)) { delete trip.selected[id]; delete trip.packed[id]; }
+    }
+  }
+  for (const id of Object.keys(d.removed)) if (!builtinIds.has(id)) delete d.removed[id];
+  return d;
+}
+function saveData() {
+  // storage can be unavailable (e.g., a file opened via share on a phone) — keep running in-memory
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (e) {}
+}
+function t(key) { return STR[data.lang][key]; }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function newTrip() {
+  return {
+    id: uid(),
+    name: t("tripDefaultName"),
+    created: new Date().toISOString(),
+    selected: {},   // itemId -> qty
+    packed: {},     // itemId -> true
+    customItems: [] // { id, section, name } — items for this trip only
+  };
+}
+function getTrip(id) { return data.trips.find(tr => tr.id === id); }
+
+function tripSections(trip) {
+  // built-in catalog (minus removed items) + global custom items + this trip's own items
+  return CATALOG.map(sec => {
+    const builtin = sec.items.filter(it => !data.removed[it.id]);
+    const global = data.customCatalog
+      .filter(ci => ci.section === sec.id)
+      .map(ci => ({ id: ci.id, he: ci.name, en: ci.name, custom: true, master: true }));
+    const tripOnly = (trip ? trip.customItems : [])
+      .filter(ci => ci.section === sec.id)
+      .map(ci => ({ id: ci.id, he: ci.name, en: ci.name, custom: true, master: false }));
+    return { ...sec, items: [...builtin, ...global, ...tripOnly] };
+  });
+}
+
+function removeItemEverywhere(itemId, isCustom) {
+  if (isCustom) data.customCatalog = data.customCatalog.filter(ci => ci.id !== itemId);
+  else data.removed[itemId] = true;
+  for (const trip of data.trips) {
+    delete trip.selected[itemId];
+    delete trip.packed[itemId];
+  }
+  saveData();
+}
+function itemName(item) { return data.lang === "he" ? item.he : item.en; }
+
+function tripCounts(trip) {
+  const selected = Object.keys(trip.selected).length;
+  const packed = Object.keys(trip.selected).filter(id => trip.packed[id]).length;
+  return { selected, packed };
+}
+
+/* ============================================================
+   Rendering
+   ============================================================ */
+const app = document.getElementById("app");
+
+function render() {
+  document.documentElement.lang = data.lang;
+  document.documentElement.dir = data.lang === "he" ? "rtl" : "ltr";
+  document.title = t("appTitle");
+  if (view.screen === "home") renderHome();
+  else renderTrip();
+}
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") node.className = v;
+    else if (k === "text") node.textContent = v;
+    else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (const c of children) if (c) node.appendChild(c);
+  return node;
+}
+
+/* ---------- Section nav chips ---------- */
+const NAV_OFFSET = 108; // sticky topbar + chip bar height
+
+function renderChips(sections) {
+  const bar = el("div", { class: "nav-chips" });
+  sections.forEach((sec, i) => {
+    bar.appendChild(el("button", {
+      class: "nav-chip" + (i === 0 ? " active" : ""),
+      "data-sec": sec.id,
+      onclick: () => gotoSection(sec.id),
+    }, [
+      el("span", { text: sec.emoji }),
+      el("span", { text: itemName(sec) }),
+    ]));
+  });
+
+  // mouse support: vertical wheel scrolls the strip, and it can be dragged
+  bar.addEventListener("wheel", e => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      const rtl = document.documentElement.dir === "rtl";
+      bar.scrollLeft += (rtl ? -1 : 1) * e.deltaY;
+    }
+  }, { passive: false });
+
+  let drag = null, suppressClick = false;
+  bar.addEventListener("pointerdown", e => {
+    drag = { x: e.clientX, sl: bar.scrollLeft, moved: false, id: e.pointerId };
+  });
+  bar.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) > 5) {
+      drag.moved = true;
+      try { bar.setPointerCapture(drag.id); } catch (_) {}
+    }
+    if (drag.moved) bar.scrollLeft = drag.sl - dx;
+  });
+  const endDrag = () => { if (drag && drag.moved) suppressClick = true; drag = null; };
+  bar.addEventListener("pointerup", endDrag);
+  bar.addEventListener("pointercancel", endDrag);
+  bar.addEventListener("click", e => {
+    if (suppressClick) { suppressClick = false; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+
+  return bar;
+}
+
+function gotoSection(secId) {
+  if (view.tab === "build" && view.collapsed[secId]) { view.collapsed[secId] = false; render(); }
+  const target = document.getElementById("sec-" + secId);
+  if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - NAV_OFFSET, behavior: "smooth" });
+}
+
+let spyTick = false;
+window.addEventListener("scroll", () => {
+  if (spyTick) return;
+  spyTick = true;
+  requestAnimationFrame(() => {
+    spyTick = false;
+    const chipsBar = document.querySelector(".nav-chips");
+    if (!chipsBar) return;
+    const secs = [...document.querySelectorAll(".section[data-sec]")];
+    if (!secs.length) return;
+    let current = secs[0];
+    for (const s of secs) {
+      if (s.getBoundingClientRect().top <= NAV_OFFSET + 80) current = s;
+    }
+    const id = current.getAttribute("data-sec");
+    for (const chip of chipsBar.querySelectorAll(".nav-chip")) {
+      const on = chip.getAttribute("data-sec") === id;
+      chip.classList.toggle("active", on);
+      if (on) chip.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  });
+}, { passive: true });
+
+/* ---------- Home ---------- */
+function renderHome() {
+  app.innerHTML = "";
+  app.removeAttribute("data-tab");
+
+  const bar = el("div", { class: "topbar" }, [
+    el("h1", {}, [
+      el("span", { class: "emoji", text: "🧳" }),
+      el("span", { text: t("appTitle") }),
+    ]),
+    el("button", { class: "icon-btn", text: t("langBtn"), onclick: toggleLang }),
+  ]);
+  app.appendChild(bar);
+
+  app.appendChild(el("button", { class: "big-btn", text: t("newTrip"), onclick: () => {
+    const trip = newTrip();
+    data.trips.unshift(trip);
+    saveData();
+    openTrip(trip.id, true);
+  }}));
+
+  app.appendChild(el("div", { class: "row-btns" }, [
+    el("button", { class: "ghost-btn", text: t("importBtn"), onclick: () => document.getElementById("importFile").click() }),
+    data.trips.length ? el("button", { class: "ghost-btn", text: t("exportAll"), onclick: exportAll }) : null,
+  ]));
+
+  if (!data.trips.length) {
+    const empty = el("div", { class: "empty-state" });
+    empty.appendChild(el("span", { class: "emoji", text: "🏝️" }));
+    t("noTrips").split("\n").forEach(line => empty.appendChild(el("div", { text: line })));
+    app.appendChild(empty);
+    return;
+  }
+
+  for (const trip of data.trips) {
+    const { selected, packed } = tripCounts(trip);
+    const dateStr = new Date(trip.created).toLocaleDateString(data.lang === "he" ? "he-IL" : "en-US");
+    const card = el("div", { class: "trip-card", onclick: () => openTrip(trip.id) }, [
+      el("div", { class: "trip-name", text: trip.name }),
+      el("div", { class: "trip-meta", text: `${t("created")}: ${dateStr} · ${selected} ${t("itemsSelected")} · ${packed}/${selected} ${t("packedOf")}` }),
+    ]);
+    if (selected > 0) {
+      const track = el("div", { class: "progress-track" });
+      track.appendChild(el("div", { class: "progress-fill", style: `width:${Math.round(100 * packed / selected)}%` }));
+      card.appendChild(track);
+    }
+    const actions = el("div", { class: "trip-actions" }, [
+      el("button", { class: "mini-btn", text: t("duplicate"), onclick: e => { e.stopPropagation(); duplicateTrip(trip.id); } }),
+      el("button", { class: "mini-btn", text: t("share"), onclick: e => { e.stopPropagation(); shareTrip(trip.id); } }),
+      el("button", { class: "mini-btn", text: t("exportTrip"), onclick: e => { e.stopPropagation(); exportTrip(trip.id); } }),
+      el("button", { class: "mini-btn danger", text: t("del"), onclick: e => {
+        e.stopPropagation();
+        if (confirm(t("confirmDelete"))) {
+          data.trips = data.trips.filter(tr => tr.id !== trip.id);
+          saveData(); render();
+        }
+      }}),
+    ]);
+    card.appendChild(actions);
+    app.appendChild(card);
+  }
+}
+
+/* ---------- Trip ---------- */
+function openTrip(id, focusName = false) {
+  view = { screen: "trip", tripId: id, tab: "build", hidePacked: false, collapsed: {}, addOpen: {} };
+  render();
+  if (focusName) {
+    const inp = document.querySelector(".title-input");
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function renderTrip() {
+  const trip = getTrip(view.tripId);
+  if (!trip) { view = { screen: "home" }; renderHome(); return; }
+  app.innerHTML = "";
+  app.setAttribute("data-tab", view.tab);
+
+  const nameInput = el("input", { class: "title-input", value: trip.name });
+  nameInput.addEventListener("change", () => {
+    trip.name = nameInput.value.trim() || t("tripDefaultName");
+    saveData();
+  });
+
+  app.appendChild(el("div", { class: "topbar" }, [
+    el("button", { class: "icon-btn", text: t("back"), onclick: () => { view = { screen: "home" }; render(); } }),
+    nameInput,
+    el("button", { class: "icon-btn", text: t("langBtn"), onclick: toggleLang }),
+  ]));
+
+  app.appendChild(el("div", { class: "tabs" }, [
+    el("button", { class: view.tab === "build" ? "active" : "", text: t("tabBuild"), onclick: () => { view.tab = "build"; render(); } }),
+    el("button", { class: view.tab === "pack" ? "active" : "", text: t("tabPack"), onclick: () => { view.tab = "pack"; render(); } }),
+  ]));
+
+  if (view.tab === "build") renderBuild(trip);
+  else renderPack(trip);
+}
+
+/* ---------- Build tab ---------- */
+function renderBuild(trip) {
+  const sections = tripSections(trip);
+
+  app.appendChild(renderChips(sections));
+
+  const anyExpanded = sections.some(sec => !view.collapsed[sec.id]);
+  const removedCount = Object.keys(data.removed).length;
+  app.appendChild(el("div", { class: "toolbar-under" }, [
+    el("button", { class: "mini-btn", text: anyExpanded ? t("collapseAll") : t("expandAll"), onclick: () => {
+      sections.forEach(sec => view.collapsed[sec.id] = anyExpanded);
+      render();
+    }}),
+    removedCount ? el("button", { class: "mini-btn", text: `${t("restoreRemoved")} (${removedCount})`, onclick: () => {
+      data.removed = {};
+      saveData(); render();
+    }}) : null,
+  ]));
+
+  for (const sec of sections) {
+    const selCount = sec.items.filter(it => trip.selected[it.id]).length;
+    const secEl = el("div", { class: "section" + (view.collapsed[sec.id] ? " collapsed" : ""), id: "sec-" + sec.id, "data-sec": sec.id });
+
+    secEl.appendChild(el("div", { class: "section-head", onclick: () => {
+      view.collapsed[sec.id] = !view.collapsed[sec.id]; render();
+    }}, [
+      el("span", { class: "sec-emoji", text: sec.emoji }),
+      el("span", { class: "sec-name", text: itemName(sec) }),
+      el("span", { class: "badge" + (selCount ? "" : " zero"), text: `${selCount}/${sec.items.length}` }),
+      el("span", { class: "chev", text: "◀" }),
+    ]));
+
+    const body = el("div", { class: "section-body" });
+
+    for (const item of sec.items) {
+      const qty = trip.selected[item.id] || 0;
+      const row = el("div", { class: "item" + (qty ? " selected" : ""), onclick: () => {
+        if (trip.selected[item.id]) {
+          delete trip.selected[item.id];
+          delete trip.packed[item.id];
+        } else {
+          trip.selected[item.id] = 1;
+        }
+        saveData(); render();
+      }}, [
+        el("span", { class: "check", text: qty ? "✓" : "" }),
+        el("span", { class: "item-name" }, [
+          document.createTextNode(itemName(item) + " "),
+          item.custom ? el("span", { class: "custom-tag", text: item.master ? t("custom") : t("tripOnlyTag") }) : null,
+        ]),
+      ]);
+
+      if (qty) {
+        const qtyEl = el("span", { class: "qty" }, [
+          el("button", { text: "−", onclick: e => {
+            e.stopPropagation();
+            if (qty <= 1) { delete trip.selected[item.id]; delete trip.packed[item.id]; }
+            else trip.selected[item.id] = qty - 1;
+            saveData(); render();
+          }}),
+          el("span", { class: "qty-num", text: String(qty) }),
+          el("button", { text: "+", onclick: e => {
+            e.stopPropagation();
+            trip.selected[item.id] = qty + 1;
+            saveData(); render();
+          }}),
+        ]);
+        row.appendChild(qtyEl);
+      }
+
+      row.appendChild(el("button", { class: "del-custom", text: "🗑", onclick: e => {
+        e.stopPropagation();
+        if (item.custom && !item.master) {
+          // trip-only item: delete affects just this trip
+          if (!confirm(t("deleteTripItemConfirm"))) return;
+          trip.customItems = trip.customItems.filter(ci => ci.id !== item.id);
+          delete trip.selected[item.id];
+          delete trip.packed[item.id];
+          saveData();
+        } else {
+          if (!confirm(t("deleteItemConfirm"))) return;
+          removeItemEverywhere(item.id, !!item.custom);
+        }
+        render();
+      }}));
+
+      body.appendChild(row);
+    }
+
+    // add custom item
+    const addRow = el("div", { class: "add-row" });
+    if (view.addOpen[sec.id]) {
+      const input = el("input", { placeholder: t("addPlaceholder") });
+      const submit = (toMaster) => {
+        const name = input.value.trim();
+        if (!name) return;
+        const ci = { id: "custom-" + uid(), section: sec.id, name };
+        if (toMaster) data.customCatalog.push(ci);
+        else trip.customItems.push(ci);
+        trip.selected[ci.id] = 1;
+        saveData(); render();
+        // keep form open for adding several in a row
+        view.addOpen[sec.id] = true;
+        const again = document.querySelector(`[data-addsec="${sec.id}"] input`);
+        if (again) again.focus();
+      };
+      input.addEventListener("keydown", e => { if (e.key === "Enter") submit(false); });
+      const form = el("div", { class: "add-form", "data-addsec": sec.id }, [
+        input,
+        el("button", { text: t("addToTrip"), onclick: () => submit(false) }),
+        el("button", { class: "master-btn", text: t("addToMaster"), onclick: () => submit(true) }),
+      ]);
+      addRow.appendChild(form);
+      setTimeout(() => input.focus(), 0);
+    } else {
+      addRow.appendChild(el("button", { class: "add-toggle", text: t("addItem"), onclick: () => {
+        view.addOpen[sec.id] = true; render();
+      }}));
+    }
+    body.appendChild(addRow);
+
+    secEl.appendChild(body);
+    app.appendChild(secEl);
+  }
+}
+
+/* ---------- Pack tab ---------- */
+function renderPack(trip) {
+  const sections = tripSections(trip)
+    .map(sec => ({ ...sec, items: sec.items.filter(it => trip.selected[it.id]) }))
+    .filter(sec => sec.items.length);
+
+  const { selected, packed } = tripCounts(trip);
+
+  if (!selected) {
+    const empty = el("div", { class: "empty-state" });
+    empty.appendChild(el("span", { class: "emoji", text: "📝" }));
+    t("packEmpty").split("\n").forEach(line => empty.appendChild(el("div", { text: line })));
+    app.appendChild(empty);
+    return;
+  }
+
+  const pct = Math.round(100 * packed / selected);
+  const summary = el("div", { class: "pack-summary" }, [
+    el("div", { class: "nums" }, [
+      el("span", { class: "count", text: `${packed} / ${selected} ${t("packedLabel")}` }),
+      el("span", { class: "pct", text: pct + "%" }),
+    ]),
+  ]);
+  const track = el("div", { class: "progress-track" });
+  track.appendChild(el("div", { class: "progress-fill", style: `width:${pct}%` }));
+  summary.appendChild(track);
+  if (packed === selected) {
+    summary.appendChild(el("div", { style: "margin-top:10px;font-weight:700;color:var(--accent-ink);text-align:center", text: t("allPacked") }));
+  }
+  app.appendChild(summary);
+
+  app.appendChild(el("div", { class: "toolbar-under" }, [
+    el("button", { class: "mini-btn", text: t("print"), onclick: () => window.print() }),
+    el("button", { class: "mini-btn", text: view.hidePacked ? t("showPacked") : t("hidePacked"), onclick: () => {
+      view.hidePacked = !view.hidePacked; render();
+    }}),
+    el("button", { class: "mini-btn danger", text: t("resetPacking"), onclick: () => {
+      if (confirm(t("confirmReset"))) { trip.packed = {}; saveData(); render(); }
+    }}),
+  ]));
+
+  const visibleSections = sections.filter(sec => !view.hidePacked || sec.items.some(it => !trip.packed[it.id]));
+  app.appendChild(renderChips(visibleSections));
+
+  for (const sec of visibleSections) {
+    const visibleItems = view.hidePacked ? sec.items.filter(it => !trip.packed[it.id]) : sec.items;
+    if (!visibleItems.length) continue;
+    const secPacked = sec.items.filter(it => trip.packed[it.id]).length;
+
+    const secEl = el("div", { class: "section", id: "sec-" + sec.id, "data-sec": sec.id });
+    secEl.appendChild(el("div", { class: "section-head", style: "cursor:default" }, [
+      el("span", { class: "sec-emoji", text: sec.emoji }),
+      el("span", { class: "sec-name", text: itemName(sec) }),
+      el("span", { class: "badge" + (secPacked === sec.items.length ? "" : " zero"), text: `${secPacked}/${sec.items.length}` }),
+    ]));
+
+    const body = el("div", { class: "section-body" });
+    for (const item of visibleItems) {
+      const isPacked = !!trip.packed[item.id];
+      const qty = trip.selected[item.id];
+      body.appendChild(el("div", { class: "item" + (isPacked ? " packed" : ""), onclick: () => {
+        if (isPacked) delete trip.packed[item.id];
+        else trip.packed[item.id] = true;
+        saveData(); render();
+      }}, [
+        el("span", { class: "check", text: isPacked ? "✓" : "" }),
+        el("span", { class: "item-name", text: itemName(item) }),
+        qty > 1 ? el("span", { class: "qty-tag", text: "× " + qty }) : null,
+      ]));
+    }
+    secEl.appendChild(body);
+    app.appendChild(secEl);
+  }
+}
+
+/* ============================================================
+   Actions
+   ============================================================ */
+function toggleLang() {
+  data.lang = data.lang === "he" ? "en" : "he";
+  saveData(); render();
+}
+
+function duplicateTrip(id) {
+  const src = getTrip(id);
+  if (!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = uid();
+  copy.name = src.name + " " + t("copySuffix");
+  copy.created = new Date().toISOString();
+  copy.packed = {};
+  data.trips.unshift(copy);
+  saveData(); render();
+}
+
+function download(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast(t("exported"));
+}
+function safeFilename(name) {
+  return (name || "trip").replace(/[\\/:*?"<>|]/g, "").trim().slice(0, 60) || "trip";
+}
+function exportTrip(id) {
+  const trip = getTrip(id);
+  if (!trip) return;
+  const referenced = data.customCatalog.filter(ci => trip.selected[ci.id]);
+  download(safeFilename(trip.name) + ".json", { type: "packing-trip", version: 2, trip, customCatalog: referenced });
+}
+function exportAll() {
+  download("packing-lists.json", { type: "packing-data", version: 2, trips: data.trips, customCatalog: data.customCatalog, removed: data.removed });
+}
+/* ---------- Share a trip as a self-contained link ---------- */
+function b64urlEncode(bytes) {
+  let s = "";
+  bytes.forEach(b => s += String.fromCharCode(b));
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64urlDecode(str) {
+  const b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+}
+
+async function shareTrip(id) {
+  const trip = getTrip(id);
+  if (!trip) return;
+  // a link to a file on this computer is useless on another device, and the
+  // share/clipboard APIs are unreliable outside http(s) — explain instead
+  if (!/^https?:$/.test(location.protocol)) { toast(t("shareNeedsWeb"), 5000); return; }
+  const payload = { t: trip, c: data.customCatalog.filter(ci => trip.selected[ci.id]) };
+  const json = JSON.stringify(payload);
+  let encoded;
+  try {
+    const stream = new Blob([json]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    const buf = new Uint8Array(await new Response(stream).arrayBuffer());
+    encoded = "z" + b64urlEncode(buf);
+  } catch (e) {
+    encoded = "j" + b64urlEncode(new TextEncoder().encode(json));
+  }
+  if (encoded.length > 30000) { toast(t("shareTooBig")); return; }
+  const url = location.href.split("#")[0] + "#trip=" + encoded;
+  if (navigator.share) {
+    try { await navigator.share({ title: trip.name, url }); return; } catch (e) { /* user cancelled — fall through */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast(t("linkCopied"));
+  } catch (e) {
+    window.prompt(t("share"), url);
+  }
+}
+
+async function handleShareHash() {
+  const m = location.hash.match(/^#trip=([zj])([A-Za-z0-9_-]+)$/);
+  if (!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  try {
+    const bytes = b64urlDecode(m[2]);
+    let json;
+    if (m[1] === "z") {
+      const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      json = await new Response(ds).text();
+    } else {
+      json = new TextDecoder().decode(bytes);
+    }
+    const payload = JSON.parse(json);
+    const trip = payload.t;
+    if (!trip || typeof trip !== "object" || !trip.name) throw new Error("format");
+    trip.selected = trip.selected || {};
+    trip.packed = trip.packed || {};
+    trip.customItems = Array.isArray(trip.customItems) ? trip.customItems : [];
+    trip.created = trip.created || new Date().toISOString();
+    trip.id = uid();
+    mergeCustomCatalog(payload.c);
+    data.trips.unshift(trip);
+    saveData();
+    openTrip(trip.id);
+    toast(t("imported"));
+  } catch (e) {
+    toast(t("importError"));
+  }
+}
+
+function mergeCustomCatalog(list) {
+  if (!Array.isArray(list)) return;
+  for (const ci of list) {
+    if (ci && ci.id && ci.name && !data.customCatalog.some(c => c.id === ci.id)) data.customCatalog.push(ci);
+  }
+}
+
+document.getElementById("importFile").addEventListener("change", function () {
+  const file = this.files[0];
+  this.value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result);
+      let imported = [];
+      if (obj.type === "packing-trip" && obj.trip) imported = [obj.trip];
+      else if (obj.type === "packing-data" && Array.isArray(obj.trips)) imported = obj.trips;
+      else throw new Error("format");
+      mergeCustomCatalog(obj.customCatalog);
+      if (obj.removed && typeof obj.removed === "object") Object.assign(data.removed, obj.removed);
+      for (const trip of imported) {
+        if (!trip || typeof trip !== "object" || !trip.name) throw new Error("format");
+        trip.selected = trip.selected || {};
+        trip.packed = trip.packed || {};
+        trip.customItems = Array.isArray(trip.customItems) ? trip.customItems : [];
+        trip.created = trip.created || new Date().toISOString();
+        trip.id = uid(); // always assign a fresh id to avoid collisions
+        data.trips.unshift(trip);
+      }
+      saveData();
+      view = { screen: "home" };
+      render();
+      toast(t("imported"));
+    } catch (e) {
+      toast(t("importError"));
+    }
+  };
+  reader.readAsText(file);
+});
+
+// the printed page header shows the trip name instead of the app name
+window.addEventListener("beforeprint", () => {
+  const trip = view.screen === "trip" && getTrip(view.tripId);
+  if (trip) document.title = trip.name;
+});
+window.addEventListener("afterprint", () => { document.title = t("appTitle"); });
+
+let toastTimer;
+function toast(msg, duration) {
+  const node = document.getElementById("toast");
+  node.textContent = msg;
+  node.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => node.classList.remove("show"), duration || 2200);
+}
+
+render();
+handleShareHash();
+</script>
+</body>
+</html>
