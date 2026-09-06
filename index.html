@@ -235,6 +235,20 @@
     .topbar h1 { font-size: 1.4rem; }
   }
 
+  /* ---------- Two columns where there is room (phones stay single-column) ---------- */
+  @media screen and (min-width: 560px) {
+    .section-body {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+    }
+    .add-row { grid-column: 1 / -1; }
+    .item { padding: 10px 14px; gap: 10px; }
+    .item:nth-child(even) { border-inline-start: 1px solid #f0f4f7; }
+    .item .item-name { white-space: normal; overflow-wrap: anywhere; }
+    /* the packing tab ends on items, so clear the bottom border of the whole last row */
+    #app[data-tab="pack"] .section-body > .item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+  }
+
   /* ---------- Print (packing list on paper) ---------- */
   @media print {
     body { background: #fff; }
