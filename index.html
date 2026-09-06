@@ -366,7 +366,6 @@ const CATALOG = [
     { id: "el-batteries", he: "סוללות AA/AAA", en: "AA/AAA batteries" },
   ]},
   { id: "beach", he: "ים ובריכה", en: "Beach & Pool", emoji: "🏖️", items: [
-    { id: "bc-swimsuits", he: "בגדי ים", en: "Swimsuits" },
     { id: "bc-towels", he: "מגבות חוף", en: "Beach towels" },
     { id: "bc-goggles", he: "משקפות שחייה", en: "Swim goggles" },
     { id: "bc-floaties", he: "מצופים", en: "Floaties" },
@@ -377,7 +376,16 @@ const CATALOG = [
     { id: "bc-watertoys", he: "משחקי מים", en: "Water toys" },
     { id: "bc-frisbee", he: "פריסבי", en: "Frisbee" },
   ]},
-  { id: "gear", he: "ציוד ושונות", en: "Gear & Misc", emoji: "🎒", items: [
+  { id: "kidsgear", he: "ציוד לילדים", en: "Kids' Gear", emoji: "🧸", items: [
+    { id: "gr-kidstableware", he: "כלי אוכל לילדים", en: "Kids' tableware" },
+    { id: "gr-games", he: "משחקים לדרך", en: "Travel games" },
+    { id: "gr-toycars", he: "מכוניות צעצוע", en: "Toy cars" },
+    { id: "gr-balls", he: "כדורים", en: "Balls" },
+    { id: "gr-balloons", he: "בלונים", en: "Balloons" },
+    { id: "gr-walkietalkie", he: "ווקי טוקי", en: "Walkie-talkies" },
+    { id: "gr-craftsupplies", he: "טושים, דפים, חוברות", en: "Markers, paper, activity books" },
+  ]},
+  { id: "gear", he: "שונות", en: "Misc", emoji: "🎒", items: [
     { id: "gr-suitcases", he: "מזוודות", en: "Suitcases" },
     { id: "gr-trolley", he: "טרולי", en: "Carry-on trolley" },
     { id: "gr-backpack", he: "תיק גב", en: "Backpack" },
@@ -388,19 +396,12 @@ const CATALOG = [
     { id: "gr-laundrybag", he: "שקית לכביסה מלוכלכת", en: "Laundry bag" },
     { id: "gr-ziplock", he: "שקיות זיפלוק", en: "Ziplock bags" },
     { id: "gr-books", he: "ספרים / מגזינים", en: "Books / magazines" },
-    { id: "gr-games", he: "משחקים לדרך", en: "Travel games" },
     { id: "gr-sunglasses", he: "משקפי שמש", en: "Sunglasses" },
     { id: "gr-locks", he: "מנעולים למזוודות", en: "Luggage locks" },
     { id: "gr-bags", he: "תיקים רב־פעמיים", en: "Reusable bags" },
     { id: "gr-smallbags", he: "שקיות קטנות", en: "Small bags" },
     { id: "gr-towels", he: "מגבות", en: "Towels" },
-    { id: "gr-kidstableware", he: "כלי אוכל לילדים", en: "Kids' tableware" },
-    { id: "gr-toycars", he: "מכוניות צעצוע", en: "Toy cars" },
-    { id: "gr-balls", he: "כדורים", en: "Balls" },
-    { id: "gr-balloons", he: "בלונים", en: "Balloons" },
-    { id: "gr-walkietalkie", he: "ווקי טוקי", en: "Walkie-talkies" },
     { id: "gr-airtag", he: "איירטאג", en: "AirTag" },
-    { id: "gr-craftsupplies", he: "טושים, דפים, חוברות", en: "Markers, paper, activity books" },
   ]},
   { id: "baby", he: "תינוקות", en: "Babies", emoji: "🍼", items: [
     { id: "bb-diapers", he: "חיתולים", en: "Diapers" },
@@ -591,6 +592,18 @@ function loadData() {
   // the "groceries" section was merged into "food" — move custom items along
   for (const ci of d.customCatalog) if (ci && ci.section === "groceries") ci.section = "food";
   for (const trip of d.trips) for (const ci of trip.customItems) if (ci && ci.section === "groceries") ci.section = "food";
+  // items that were replaced by an equivalent elsewhere keep their place in saved trips
+  const RENAMED = { "bc-swimsuits": "cl-swimsuit" };
+  for (const trip of d.trips) {
+    for (const [oldId, newId] of Object.entries(RENAMED)) {
+      if (trip.selected[oldId] !== undefined) {
+        trip.selected[newId] = trip.selected[newId] || trip.selected[oldId];
+        delete trip.selected[oldId];
+      }
+      if (trip.packed[oldId]) { trip.packed[newId] = true; delete trip.packed[oldId]; }
+    }
+  }
+
   // a custom item whose name now exists in the built-in catalog is folded into it,
   // so promoting a personal item to the default list doesn't leave a duplicate behind
   const byName = new Map();
