@@ -156,6 +156,12 @@
     border-radius: 999px; padding: 2px 10px; font-size: .75rem; font-weight: 700;
   }
   .badge.zero { background: #eef2f5; color: var(--muted); font-weight: 400; }
+  .sec-btn {
+    border: 1px solid var(--border); background: #fff; color: var(--muted);
+    border-radius: 8px; padding: 4px 9px; font-size: .72rem; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sec-btn:hover { color: var(--accent-ink); border-color: var(--accent); }
   .chev { color: var(--muted); font-size: .8rem; transition: transform .2s; }
   .section.collapsed .chev { transform: rotate(90deg); }
   .section.collapsed .section-body { display: none; }
@@ -266,14 +272,15 @@
     .item { padding: 4px 10px; break-inside: avoid; cursor: default; }
     .item .check { width: 16px; height: 16px; border-radius: 4px; }
     .qty button { display: none; }
-    /* on the packing tab, print empty checkboxes to tick off by hand */
-    #app[data-tab="pack"] .item .check {
+    .sec-btn { display: none !important; }
+    /* collapsed sections still belong on a printed catalog */
+    .section.collapsed .section-body { display: block !important; }
+    /* every printed checkbox is empty, so the sheet is ticked off by hand */
+    .item .check {
       background: #fff !important; border: 1.5px solid #444 !important;
       color: transparent !important;
     }
-    #app[data-tab="pack"] .item.packed .item-name {
-      text-decoration: none; color: var(--ink);
-    }
+    .item.packed .item-name { text-decoration: none; color: var(--ink); }
   }
 </style>
 </head>
@@ -509,6 +516,9 @@ const STR = {
     restoreRemoved: "שחזור פריטים שהוסרו",
     resetPacking: "איפוס סימוני אריזה",
     print: "🖨️ הדפסה",
+    printCatalog: "🖨️ הדפסת הקטלוג",
+    selectSection: "סמן הכל",
+    clearSection: "נקה",
     confirmReset: "לאפס את כל סימוני האריזה?",
     hidePacked: "הסתרת פריטים שנארזו",
     showPacked: "הצגת פריטים שנארזו",
@@ -556,6 +566,9 @@ const STR = {
     restoreRemoved: "Restore removed items",
     resetPacking: "Reset packing checkmarks",
     print: "🖨️ Print",
+    printCatalog: "🖨️ Print catalog",
+    selectSection: "Select all",
+    clearSection: "Clear",
     confirmReset: "Reset all packing checkmarks?",
     hidePacked: "Hide packed items",
     showPacked: "Show packed items",
@@ -919,6 +932,7 @@ function renderBuild(trip) {
       sections.forEach(sec => view.collapsed[sec.id] = anyExpanded);
       render();
     }}),
+    el("button", { class: "mini-btn", text: t("printCatalog"), onclick: () => window.print() }),
     removedCount ? el("button", { class: "mini-btn", text: `${t("restoreRemoved")} (${removedCount})`, onclick: () => {
       data.removed = {};
       saveData(); render();
@@ -929,11 +943,20 @@ function renderBuild(trip) {
     const selCount = sec.items.filter(it => trip.selected[it.id]).length;
     const secEl = el("div", { class: "section" + (view.collapsed[sec.id] ? " collapsed" : ""), id: "sec-" + sec.id, "data-sec": sec.id });
 
+    const allSelected = selCount === sec.items.length && sec.items.length > 0;
     secEl.appendChild(el("div", { class: "section-head", onclick: () => {
       view.collapsed[sec.id] = !view.collapsed[sec.id]; render();
     }}, [
       el("span", { class: "sec-emoji", text: sec.emoji }),
       el("span", { class: "sec-name", text: itemName(sec) }),
+      el("button", { class: "sec-btn", text: allSelected ? t("clearSection") : t("selectSection"), onclick: e => {
+        e.stopPropagation();
+        for (const it of sec.items) {
+          if (allSelected) { delete trip.selected[it.id]; delete trip.packed[it.id]; }
+          else if (!trip.selected[it.id]) trip.selected[it.id] = 1;
+        }
+        saveData(); render();
+      }}),
       el("span", { class: "badge" + (selCount ? "" : " zero"), text: `${selCount}/${sec.items.length}` }),
       el("span", { class: "chev", text: "◀" }),
     ]));
