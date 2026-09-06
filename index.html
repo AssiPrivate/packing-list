@@ -301,6 +301,7 @@ const CATALOG = [
     { id: "cl-flipflops", he: "כפכפים", en: "Flip-flops" },
     { id: "cl-sport", he: "בגדי ספורט", en: "Sportswear" },
     { id: "cl-evening", he: "בגד ערב / אלגנט", en: "Evening outfit" },
+    { id: "cl-swimsuit", he: "בגד ים", en: "Swimsuit" },
   ]},
   { id: "kids", he: "ביגוד ילדים", en: "Kids' Clothing", emoji: "🧒", items: [
     { id: "kd-shirts-short", he: "חולצות קצרות לילדים", en: "Kids' short-sleeve shirts" },
@@ -338,6 +339,7 @@ const CATALOG = [
     { id: "tl-glasses", he: "משקפיים", en: "Glasses" },
     { id: "tl-feminine", he: "מוצרי היגיינה נשית", en: "Feminine hygiene products" },
     { id: "tl-perfume", he: "בושם", en: "Perfume" },
+    { id: "tl-detergent", he: "אבקת כביסה", en: "Laundry detergent" },
   ]},
   { id: "meds", he: "תרופות ועזרה ראשונה", en: "Medicine & First Aid", emoji: "💊", items: [
     { id: "md-personal", he: "תרופות אישיות / מרשם", en: "Personal / prescription meds" },
@@ -361,6 +363,7 @@ const CATALOG = [
     { id: "el-tablet", he: "טאבלט לילדים", en: "Kids' tablet" },
     { id: "el-laptop", he: "מחשב נייד", en: "Laptop" },
     { id: "el-cables", he: "כבלי טעינה", en: "Charging cables" },
+    { id: "el-batteries", he: "סוללות AA/AAA", en: "AA/AAA batteries" },
   ]},
   { id: "beach", he: "ים ובריכה", en: "Beach & Pool", emoji: "🏖️", items: [
     { id: "bc-swimsuits", he: "בגדי ים", en: "Swimsuits" },
@@ -395,6 +398,9 @@ const CATALOG = [
     { id: "gr-toycars", he: "מכוניות צעצוע", en: "Toy cars" },
     { id: "gr-balls", he: "כדורים", en: "Balls" },
     { id: "gr-balloons", he: "בלונים", en: "Balloons" },
+    { id: "gr-walkietalkie", he: "ווקי טוקי", en: "Walkie-talkies" },
+    { id: "gr-airtag", he: "איירטאג", en: "AirTag" },
+    { id: "gr-craftsupplies", he: "טושים, דפים, חוברות", en: "Markers, paper, activity books" },
   ]},
   { id: "baby", he: "תינוקות", en: "Babies", emoji: "🍼", items: [
     { id: "bb-diapers", he: "חיתולים", en: "Diapers" },
@@ -585,6 +591,29 @@ function loadData() {
   // the "groceries" section was merged into "food" — move custom items along
   for (const ci of d.customCatalog) if (ci && ci.section === "groceries") ci.section = "food";
   for (const trip of d.trips) for (const ci of trip.customItems) if (ci && ci.section === "groceries") ci.section = "food";
+  // a custom item whose name now exists in the built-in catalog is folded into it,
+  // so promoting a personal item to the default list doesn't leave a duplicate behind
+  const byName = new Map();
+  for (const sec of CATALOG) {
+    for (const it of sec.items) byName.set(sec.id + "|" + it.he.trim(), it.id);
+  }
+  const foldIn = (list, trips) => {
+    for (const ci of list.slice()) {
+      const builtinId = ci && byName.get(ci.section + "|" + String(ci.name).trim());
+      if (!builtinId) continue;
+      for (const trip of trips) {
+        if (trip.selected[ci.id] !== undefined) {
+          trip.selected[builtinId] = trip.selected[builtinId] || trip.selected[ci.id];
+          delete trip.selected[ci.id];
+        }
+        if (trip.packed[ci.id]) { trip.packed[builtinId] = true; delete trip.packed[ci.id]; }
+      }
+      list.splice(list.indexOf(ci), 1);
+    }
+  };
+  foldIn(d.customCatalog, d.trips);
+  for (const trip of d.trips) foldIn(trip.customItems, [trip]);
+
   // drop references to items that no longer exist in the app's catalog
   const builtinIds = new Set(CATALOG.flatMap(s => s.items.map(i => i.id)));
   for (const trip of d.trips) {
